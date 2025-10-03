@@ -4,40 +4,52 @@ import userEvent from '@testing-library/user-event'
 import ExpandableText from '../../src/components/ExpandableText'
 
 describe('ExpandableText', () => {
-  it('should render full article when it not exceeded the limit', () => {
-    const text = 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Non, tempora.'
-    render(<ExpandableText text={text} />)
+  const limit = 255
+  const longText = 'a'.repeat(limit + 1)
+  const truncatedText = longText.slice(0, limit) + '...'
 
-    const article = screen.getByRole('article')
+  it('should not render the article if the text is an empty', () => {
+    const { container } = render(<ExpandableText text='' />)
 
-    expect(article).toBeInTheDocument()
-    expect(article).toHaveTextContent(text)
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('should render short article and show more button when the article exceeded the limit', () => {
-    const text =
-      'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sint omnis quasi voluptas quod dolor corporis officia sed nam minus! Facere commodi repellendus doloribus eligendi consequatur culpa maiores. Eligendi, odit cumque possimus recusandae magnam ex neque harum atque nam quidem sequi sed numquam nostrum similique nisi mollitia quae ut exercitationem ab vero. Fugit iure laudantium exercitationem quibusdam sequi! Adipisci voluptatem, neque nobis dolor, corrupti magni sed nesciunt modi accusantium voluptatibus nemo est possimus totam velit, officia ex iste? A quis sint vel, veniam quidem eligendi. Odit laudantium qui blanditiis, quae vitae et impedit nostrum vel magni iusto, exercitationem asperiores ut architecto.'
-    render(<ExpandableText text={text} />)
+  it('should render the full text article if the text less than or equal to the limit', () => {
+    const shortText = 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, laudantium?'
+    render(<ExpandableText text={shortText} />)
+
+    const article = screen.getByRole('article')
+
+    expect(article).toBeInTheDocument()
+    expect(article).toHaveTextContent(shortText)
+  })
+
+  it('Should render initially truncated text with show more button', () => {
+    render(<ExpandableText text={longText} />)
 
     const article = screen.getByRole('article')
     expect(article).toBeInTheDocument()
+    expect(article).toHaveTextContent(truncatedText)
 
     const button = screen.getByRole('button')
     expect(button).toBeInTheDocument()
     expect(button).toHaveTextContent(/show more/i)
   })
 
-  it('should render full article and show less button when the button clicked', async () => {
-    const text =
-      'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sint omnis quasi voluptas quod dolor corporis officia sed nam minus! Facere commodi repellendus doloribus eligendi consequatur culpa maiores. Eligendi, odit cumque possimus recusandae magnam ex neque harum atque nam quidem sequi sed numquam nostrum similique nisi mollitia quae ut exercitationem ab vero. Fugit iure laudantium exercitationem quibusdam sequi! Adipisci voluptatem, neque nobis dolor, corrupti magni sed nesciunt modi accusantium voluptatibus nemo est possimus totam velit, officia ex iste? A quis sint vel, veniam quidem eligendi. Odit laudantium qui blanditiis, quae vitae et impedit nostrum vel magni iusto, exercitationem asperiores ut architecto.'
-    render(<ExpandableText text={text} />)
+  it('Should render full text with show less button when click to show more button and vice versa', async () => {
+    render(<ExpandableText text={longText} />)
 
     const button = screen.getByRole('button')
     const user = userEvent.setup()
     await user.click(button)
-    expect(button).toHaveTextContent(/show less/i)
 
     const article = screen.getByRole('article')
-    expect(article).toHaveTextContent(text)
+
+    expect(article).toHaveTextContent(longText)
+    expect(button).toHaveTextContent(/show less/i)
+
+    await user.click(button)
+    expect(article).toHaveTextContent(truncatedText)
+    expect(button).toHaveTextContent(/show more/i)
   })
 })
